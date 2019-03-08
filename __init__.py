@@ -37,18 +37,21 @@ CONFIGURATOR_LINK_NAME = "Link Thermosmart account"
 CONFIGURATOR_SUBMIT_CAPTION = "I authorized successfully"
 
 DEFAULT_CACHE_PATH = '.thermosmart-token-cache'
+DEFAULT_CLIENT_ID = ''
+DEFAULT_CLIENT_SECRET = ''
 DEFAULT_NAME = 'Thermosmart'
 
 DOMAIN = 'thermosmart'
 
-UPDATE_TIME = timedelta(seconds=30)
+UPDATE_TIME = timedelta(seconds=300)
 
 WEBHOOK_SUBSCRIBERS  = []
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
-        vol.Required(CONF_API_CLIENT_ID): cv.string,
-        vol.Required(CONF_API_CLIENT_SECRET): cv.string,
+        vol.Optional(CONF_API_CLIENT_ID, default=DEFAULT_CLIENT_ID): cv.string,
+        vol.Optional(CONF_API_CLIENT_SECRET, 
+                    default = DEFAULT_CLIENT_SECRET): cv.string,
         vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_WEBHOOK): cv.string
     })
@@ -95,7 +98,8 @@ def setup(hass, config):
 
     call_update = True
     webhook_id = config[DOMAIN].get(CONF_WEBHOOK, None)
-    if webhook_id:
+    if webhook_id and config[DOMAIN].get(CONF_API_CLIENT_ID) \
+                                != DEFAULT_CLIENT_ID:
         hass.components.webhook.async_register(DOMAIN, 'Thermosmart', 
             webhook_id, handle_webhook)
         call_update = False
@@ -105,8 +109,6 @@ def setup(hass, config):
         {CONF_NAME: config[DOMAIN].get(CONF_NAME, None),
         'update': call_update}, config
     )
-
-    _LOGGER.info(hass.data[DOMAIN].thermosmart.latest_update)
 
     if hass.data[DOMAIN].thermosmart.opentherm():
         discovery.load_platform(
